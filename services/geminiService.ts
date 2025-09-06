@@ -1,8 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Recipe } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const recipeSchema = {
     type: Type.ARRAY,
     items: {
@@ -42,7 +40,8 @@ const recipeSchema = {
 export const generateRecipes = async (
     ingredients: string,
     mealType: string,
-    dietaryRestrictions: string
+    dietaryRestrictions: string,
+    apiKey: string
 ): Promise<Recipe[]> => {
     
     let prompt = `You are a creative and experienced chef. Your task is to generate 3 unique and delicious recipes.
@@ -59,6 +58,11 @@ export const generateRecipes = async (
     `;
 
     try {
+        if (!apiKey) {
+            throw new Error("API key is not configured. Please provide an API key in the settings.");
+        }
+        const ai = new GoogleGenAI({ apiKey });
+
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
@@ -79,6 +83,13 @@ export const generateRecipes = async (
 
     } catch (error) {
         console.error("Error generating recipes:", error);
-        throw new Error("Could not communicate with the Gemini API.");
+        if (error instanceof Error) {
+            // Re-throw specific, helpful error messages
+            if (error.message.includes("API key not valid")) {
+                 throw new Error("The provided API key is not valid. Please check and try again.");
+            }
+            throw new Error(error.message);
+        }
+        throw new Error("An unknown error occurred while communicating with the Gemini API.");
     }
 };

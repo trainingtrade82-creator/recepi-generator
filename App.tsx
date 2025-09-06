@@ -9,17 +9,23 @@ import type { Recipe } from './types';
 import { Footer } from './components/Footer';
 
 const App: React.FC = () => {
+  const [apiKey, setApiKey] = useState<string>('');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerateRecipes = useCallback(async (ingredients: string, mealType: string, dietaryRestrictions: string) => {
+    if (!apiKey) {
+      setError("Please enter your Google Gemini API key above to generate recipes.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setRecipes([]);
 
     try {
-      const generatedRecipes = await generateRecipes(ingredients, mealType, dietaryRestrictions);
+      const generatedRecipes = await generateRecipes(ingredients, mealType, dietaryRestrictions, apiKey);
       setRecipes(generatedRecipes);
     } catch (err) {
       if (err instanceof Error) {
@@ -30,7 +36,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [apiKey]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -40,6 +46,27 @@ const App: React.FC = () => {
           <p className="text-center text-slate-600 mb-8">
             Tired of staring at a full fridge with no idea what to make? Enter the ingredients you have, and let our AI chef whip up some delicious recipe ideas for you!
           </p>
+
+          <div className="bg-white p-6 rounded-xl shadow-lg space-y-4 border border-slate-200 mb-8">
+            <h2 className="text-xl font-semibold text-slate-800">Settings</h2>
+            <div>
+              <label htmlFor="api-key" className="block text-sm font-medium text-slate-700 mb-2">
+                Google Gemini API Key
+              </label>
+              <input
+                id="api-key"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your API key here"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                You can get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">Google AI Studio</a>.
+              </p>
+            </div>
+          </div>
+
           <IngredientForm onSubmit={handleGenerateRecipes} isLoading={isLoading} />
 
           {isLoading && <LoadingSpinner />}
@@ -66,7 +93,7 @@ const App: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-slate-900">No recipes yet</h3>
-                <p className="mt-1 text-sm text-slate-500">Enter some ingredients to get started!</p>
+                <p className="mt-1 text-sm text-slate-500">Enter your ingredients and API key to get started!</p>
             </div>
            )}
         </div>
